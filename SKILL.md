@@ -1,7 +1,7 @@
 ---
 name: 今日头条运营大师
 description: 今日头条创作者平台全流程运营自动化。支持多账号管理、登录管理、文章/视频/微头条发布、作品管理、评论管理、数据分析、创作灵感获取。使用浏览器自动化模拟真人操作发布内容，浏览器内 API 获取数据。当用户需要运营头条号、发布内容、查看数据或管理评论时使用此技能。
-version: 1.1.4
+version: 1.2.0
 icon: 📰
 metadata:
   clawdbot:
@@ -19,7 +19,7 @@ metadata:
 
 1. 全局安装 CLI 工具：`npm install -g @openclaw-cn/toutiao-ops`
 2. 安装完成后会自动下载 Chromium 浏览器，若失败则手动执行：`npx playwright install chromium`
-3. 登录：`toutiao-ops auth login`（首次需手动扫码）
+3. 登录：`toutiao-ops auth login`（首次需手动扫码）；已在浏览器登录时也可用 `toutiao-ops auth login --cookies <cookies.txt>` 导入 Netscape 格式登录态，无需扫码
 
 ## 多账号
 
@@ -68,6 +68,7 @@ toutiao-ops auth list
 |------|------|
 | `toutiao-ops auth check` | 检测登录状态 |
 | `toutiao-ops auth login` | 扫码登录（输出二维码截图路径，需展示给用户） |
+| `toutiao-ops auth login --cookies <文件>` | 导入 Netscape 格式 Cookie 文件登录（无需扫码，适合无显示器环境） |
 | `toutiao-ops auth logout` | 清除指定账号的登录缓存 |
 | `toutiao-ops auth list` | 列出所有已保存的账号 |
 | `toutiao-ops publish article --title "..." --content "..."` | 发布文章（默认 Markdown 富文本排版，支持 --format / --content-file / --cover-mode 等） |

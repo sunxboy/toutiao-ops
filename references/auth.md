@@ -98,6 +98,59 @@ toutiao-ops [--account <name>] auth login
 
 登录成功后会自动保存账号元信息（昵称、头像、登录时间）到 `meta.json`。
 
+### Cookie 文件登录
+
+已在浏览器中登录头条号时，可导出登录态（Cookie 文件）直接导入，无需扫码，适合无显示器环境。
+
+```bash
+toutiao-ops [--account <name>] auth login --cookies <Cookie 文件路径>
+```
+
+**导出 Cookie 文件**：在已登录头条号的浏览器中，用 `Get cookies.txt LOCALLY` / `EditThisCookie` 等插件导出 `mp.toutiao.com` 或 `toutiao.com` 的 Cookie，选择 **Netscape HTTP Cookie File** 格式（通常为 `cookies.txt`）。文件格式示例（每行 7 个 Tab 分隔字段）：
+
+```
+# Netscape HTTP Cookie File
+.toutiao.com	TRUE	/	TRUE	1799394583	sessionid	example-session-id
+mp.toutiao.com	FALSE	/	TRUE	0	csrf_session_id	example-csrf-token
+```
+
+**导入流程**：CLI 解析文件后清空该账号旧 Cookie，导入新 Cookie，再打开头条号后台验证登录状态，成功后保存会话，后续命令直接复用，无需再次导入。
+
+成功输出示例：
+
+```json
+{
+  "logged_in": true,
+  "account": "default",
+  "message": "Cookie 登录成功，会话已保存",
+  "cookie_file": "/path/to/cookies.txt",
+  "cookies_loaded": 34,
+  "cookies_skipped": { "expired": 0, "non_toutiao": 2, "malformed": 0 },
+  "warnings": [],
+  "username": "番茄3580433091797615",
+  "userId": "3580433091797615"
+}
+```
+
+**解析规则**：
+
+- 只导入 `toutiao.com` 及其子域的 Cookie，其他域名自动跳过
+- 过期的 Cookie 自动跳过（Playwright 会拒绝过期 Cookie）
+- `expires` 为 0 的会话 Cookie 正常导入
+- 支持 `#HttpOnly_` 前缀（curl 导出的 HttpOnly Cookie 标记）
+- 文件中至少要包含一个会话 Cookie（`sessionid` / `sid_tt` / `uid_tt` / `sso_uid_tt` / `toutiao_sso_user` 等），否则报错
+- JSON 格式的 Cookie 导出暂不支持，会报错提示改导 Netscape 格式
+
+**常见失败**：
+
+| 现象 | 原因与处理 |
+|------|-----------|
+| `Cookie 文件缺少头条登录会话 Cookie` | 导出时浏览器未登录头条号，或只导出了部分域名；确认登录后重新导出 `toutiao.com` 全站 Cookie |
+| `Cookie 登录失败：导入后仍在登录页` | Cookie 已过期或不完整；在浏览器中确认仍处于登录状态后重新导出 |
+| `该文件是 JSON 格式` | 插件导出时选错格式，改选 Netscape HTTP Cookie File 格式 |
+
+**安全提示**：Cookie 文件等同于账号密码，可直接登录你的头条号。请勿发送给他人、勿提交到 Git（仓库 `.gitignore` 已忽略 `cookies.txt` / `*.cookies.txt`），用完可删除本地文件——登录态已保存在浏览器会话中，删除文件不影响已登录的账号。
+
 ### 退出登录
 
 ```bash
@@ -143,7 +196,8 @@ toutiao-ops auth list
 ## 注意事项
 
 - 任何其他操作前，都应先调用 `auth check` 确认登录状态
-- 如果未登录，执行 `auth login` 并将二维码截图展示给用户
+- 如果未登录，执行 `auth login` 并将二维码截图展示给用户；或在已有浏览器登录态时用 `auth login --cookies <文件>` 导入登录
+- `auth login --cookies` 会清空该账号旧 Cookie 后再导入，导入成功即完成登录，无需扫码
 - 切换账号：直接用 `--account <新账号名>` 即可，无需先 logout
 - 彻底删除某账号：`--account <name> auth logout`
 - 不要对同一个账号同时运行多个命令（会争抢浏览器上下文锁文件）

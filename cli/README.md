@@ -35,8 +35,10 @@ npx playwright install chromium
 ## 快速开始
 
 ```bash
-# 1. 登录（首次需要手机扫码）
+# 1. 登录（首次需要手机扫码；已在浏览器登录时也可用 Cookie 文件登录）
 npx toutiao-ops auth login
+# 或导入浏览器导出的 Netscape 格式登录态（cookies.txt），无需扫码
+npx toutiao-ops auth login --cookies cookies.txt
 
 # 2. 发布一条微头条
 npx toutiao-ops publish weitoutiao --content "Hello 头条！"
@@ -73,6 +75,7 @@ npx toutiao-ops auth list
 ```bash
 toutiao-ops auth check                  # 检测登录状态
 toutiao-ops auth login                  # 扫码登录
+toutiao-ops auth login --cookies cookies.txt  # 导入 Netscape 格式 Cookie 文件登录（无需扫码）
 toutiao-ops auth logout                 # 退出登录（清除缓存）
 toutiao-ops auth list                   # 列出所有账号
 ```

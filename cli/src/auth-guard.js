@@ -34,6 +34,6 @@ export async function ensureLoggedIn(page) {
 
   const url = page.url();
   if (url.includes(LOGIN_PATH) || url.includes('sso.toutiao.com')) {
-    throw new Error('未登录头条号，请先执行: toutiao-ops auth login');
+    throw new Error('未登录头条号，请先执行: toutiao-ops auth login（扫码，或加 --cookies <Cookie 文件> 导入登录态）');
   }
 }

@@ -5,6 +5,10 @@ package-lock.json
 .env
 .env.*
 credentials.json
+# 登录态 Cookie 文件等同于账号密码，切勿提交
+cookies.txt
+*.cookies.txt
+*.cookies
 *.tmp
 *.cache
 screenshots/

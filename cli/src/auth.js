@@ -1,4 +1,5 @@
 import { launchBrowser, closeBrowser, sleep, waitForStable, getAccountDir, getScreenshotDir, getBrowserDataDir } from './browser.js';
+import { loadCookieFile } from './cookie-file.js';
 import { homedir } from 'os';
 import { join } from 'path';
 import { mkdirSync, rmSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
@@ -53,7 +54,7 @@ export async function checkLogin(opts = {}) {
     const url = page.url();
 
     if (isOnLoginPage(url)) {
-      return { logged_in: false, account: accountLabel(opts), message: '未登录，请执行 auth login 扫码登录' };
+      return { logged_in: false, account: accountLabel(opts), message: '未登录，请执行 auth login 扫码登录，或使用 auth login --cookies <Cookie 文件> 导入登录态' };
     }
 
     if (isOnDashboard(url)) {
@@ -67,7 +68,7 @@ export async function checkLogin(opts = {}) {
       return { logged_in: true, account: accountLabel(opts), ...userInfo };
     }
 
-    return { logged_in: false, account: accountLabel(opts), message: '未登录，请执行 auth login 扫码登录' };
+    return { logged_in: false, account: accountLabel(opts), message: '未登录，请执行 auth login 扫码登录，或使用 auth login --cookies <Cookie 文件> 导入登录态' };
   } finally {
     await closeBrowser(context);
   }
@@ -157,6 +158,67 @@ export async function doLogin(opts = {}) {
       message: '登录成功，会话已保存',
       ...userInfo,
     };
+  } finally {
+    await closeBrowser(context);
+  }
+}
+
+/**
+ * 使用 Netscape 格式 Cookie 文件登录。
+ *
+ * 用法：auth login --cookies <文件路径>
+ * 流程：解析 Cookie 文件 -> 清空该账号旧 Cookie -> 导入新 Cookie ->
+ * 打开头条号后台验证 -> 成功则保存账号元信息，后续命令直接复用该会话。
+ *
+ * @param {object} opts
+ * @param {string} opts.cookieFile Netscape 格式 Cookie 文件路径（必填）
+ * @param {boolean} [opts.headed] 显示浏览器窗口（默认无头）
+ */
+export async function loginWithCookies(opts = {}) {
+  const cookieFile = opts.cookieFile || opts.cookies;
+  if (!cookieFile) {
+    throw new Error('缺少 Cookie 文件路径，请使用：auth login --cookies <Cookie 文件路径>');
+  }
+
+  // 先解析校验文件，失败直接报错，不启动浏览器。
+  const { cookies, stats, warnings } = loadCookieFile(cookieFile);
+
+  const { context, page } = await launchBrowser({ ...opts, headless: !opts.headed });
+  try {
+    // 清空旧 Cookie，避免过期会话与新登录态冲突（该上下文仅用于头条）。
+    await context.clearCookies();
+    await context.addCookies(cookies);
+
+    await navigateAndSettle(page);
+    const url = page.url();
+
+    if (isOnDashboard(url)) {
+      const userInfo = await extractUserInfo(page);
+      saveAccountMeta(opts.account, userInfo);
+      return {
+        logged_in: true,
+        account: accountLabel(opts),
+        message: 'Cookie 登录成功，会话已保存',
+        cookie_file: cookieFile,
+        cookies_loaded: stats.loaded,
+        cookies_skipped: {
+          expired: stats.expired,
+          non_toutiao: stats.nonToutiao,
+          malformed: stats.malformed,
+        },
+        warnings,
+        ...userInfo,
+      };
+    }
+
+    const reason = isOnLoginPage(url)
+      ? '导入后仍在登录页，Cookie 可能已过期或不完整'
+      : `导入后未进入后台，当前页面：${url}`;
+    throw new Error(
+      `Cookie 登录失败：${reason}（已导入 ${stats.loaded} 个 Cookie，` +
+      `过期 ${stats.expired} 个，非头条域名 ${stats.nonToutiao} 个，格式错误 ${stats.malformed} 个）。` +
+      '请在浏览器中确认头条号仍处于登录状态后，重新导出 Cookie 再试。'
+    );
   } finally {
     await closeBrowser(context);
   }

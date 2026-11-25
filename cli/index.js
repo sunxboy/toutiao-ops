@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { checkLogin, doLogin, doLogout, listAccounts } from './src/auth.js';
+import { checkLogin, doLogin, doLogout, listAccounts, loginWithCookies } from './src/auth.js';
 import { publishArticle } from './src/publish-article.js';
 import { publishVideo } from './src/publish-video.js';
 import { publishWeitoutiao } from './src/publish-weitoutiao.js';
@@ -32,9 +32,17 @@ auth
 
 auth
   .command('login')
-  .description('打开浏览器手动扫码登录')
+  .description('扫码登录，或使用 Cookie 文件登录（--cookies <文件>）')
+  .option('--cookies <path>', 'Netscape 格式 Cookie 文件路径（浏览器插件导出的 cookies.txt），导入登录态代替扫码')
+  .option('--cookie-file <path>', '--cookies 的别名')
+  .option('--headed', 'Cookie 登录时显示浏览器窗口（默认无头；扫码登录始终有头）')
   .action(async (opts) => {
-    await run(doLogin, opts);
+    const cookieFile = opts.cookies || opts.cookieFile;
+    if (cookieFile) {
+      await run(loginWithCookies, { ...opts, cookieFile });
+    } else {
+      await run(doLogin, opts);
+    }
   });
 
 auth

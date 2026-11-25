@@ -72,6 +72,7 @@ toutiao-ops/
     └── src/
         ├── browser.js          # 浏览器启动、反检测、工具函数
         ├── auth.js             # 登录/登出/账号管理
+        ├── cookie-file.js      # Netscape Cookie 文件解析（Cookie 登录）
         ├── auth-guard.js       # 登录状态守卫
         ├── publish-article.js  # 文章发布自动化
         ├── publish-video.js    # 视频发布自动化
@@ -102,8 +103,9 @@ Agent 读取 `SKILL.md` 获取命令列表，读取 `references/*.md` 获取参�
 ## 快速开始
 
 ```bash
-# 登录（首次需手机扫码）
+# 登录（首次需手机扫码；已在浏览器登录时也可用 Cookie 文件登录，无需扫码）
 npx toutiao-ops auth login
+npx toutiao-ops auth login --cookies cookies.txt
 
 # 发布文章
 npx toutiao-ops publish article --title "AI 前沿" --content "内容..."
@@ -147,6 +149,7 @@ npx toutiao-ops auth list
 |------|------|
 | `auth check` | 检测登录状态 |
 | `auth login` | 扫码登录 |
+| `auth login --cookies <文件>` | 导入 Netscape 格式 Cookie 文件登录 |
 | `auth logout` | 退出登录 |
 | `auth list` | 列出所有账号 |
 | `publish article` | 发布文章 |
